@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "605888775209",
+    "project_id": "compwebcms",
+    "storage_bucket": "compwebcms.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:605888775209:android:db5236c639cd206cc98838",
+        "android_client_info": {
+          "package_name": "com.example.cms_comp586"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA4Bhpt2WHpNClSlFhIbFqOdPiv2pXc8jI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
