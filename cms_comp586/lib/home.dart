@@ -30,7 +30,7 @@ class HomeScreen extends StatelessWidget {
                         padding: const EdgeInsets.all(2),
                         child: AspectRatio(
                           aspectRatio: 1,
-                          child: Image.asset('assests/android-chrome-512x512.png'),
+                          child: Image.asset('assests/android-chrome-192x192.png'),
                         ),
                       ),
                     ],
