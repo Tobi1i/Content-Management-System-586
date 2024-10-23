@@ -1,6 +1,9 @@
 import 'package:firebase_ui_auth/firebase_ui_auth.dart';
 import 'package:flutter/material.dart';
 
+import 'upload_file.dart';
+import 'user_files_list.dart';
+
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
@@ -30,7 +33,8 @@ class HomeScreen extends StatelessWidget {
                         padding: const EdgeInsets.all(2),
                         child: AspectRatio(
                           aspectRatio: 1,
-                          child: Image.asset('assests/android-chrome-192x192.png'),
+                          child:
+                              Image.asset('assests/android-chrome-192x192.png'),
                         ),
                       ),
                     ],
@@ -44,13 +48,17 @@ class HomeScreen extends StatelessWidget {
       ),
       body: Center(
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Image.asset('dash.png'),
             Text(
               'Welcome!',
               style: Theme.of(context).textTheme.displaySmall,
             ),
+            const UploadFileScreen(),
+            const FilesList(),
             const SignOutButton(),
+            
+            
           ],
         ),
       ),
