@@ -70,7 +70,7 @@ class UploadFileScreenState extends State<UploadFileScreen> {
         const SnackBar(content: Text('File uploaded successfully!')),
       );
     } catch (e) {
-      print(e);
+      //print(e);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Failed to upload file')),
       );

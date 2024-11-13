@@ -1,6 +1,13 @@
+import 'dart:io';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:http/http.dart' as http;
+// ignore: avoid_web_libraries_in_flutter
+import 'dart:html' as html; // Only used in web environment
+import 'package:path_provider/path_provider.dart';
 
 class FilesList extends StatefulWidget {
   const FilesList({super.key});
@@ -72,6 +79,8 @@ class FilesListState extends State<FilesList> {
                 fileName: fileName,
                 fileSize: fileSize,
                 fileTypeIcon: fileTypeIcon,
+                downloadURL: downloadURL,
+                userId: _auth.currentUser!.uid,
               );
             },
           ),
@@ -108,25 +117,121 @@ class FilesListState extends State<FilesList> {
       return Icons.insert_drive_file; // unknown file types
     }
   }
-
-  // Function to handle downloading the file
-  void _downloadFile(String downloadURL) {
-    // Find package to work on web and mobile TODO
-    //print('Download URL: $downloadURL'); //Download link is direct
-  }
 }
 
-class FileCardWidget extends StatelessWidget {
+class FileCardWidget extends StatefulWidget {
   final String fileName;
   final String fileSize;
   final IconData fileTypeIcon;
+  final String downloadURL;
+  final String userId;
 
   const FileCardWidget({
     super.key,
     required this.fileName,
     required this.fileSize,
     required this.fileTypeIcon,
+    required this.downloadURL,
+    required this.userId,
   });
+
+  @override
+  State<FileCardWidget> createState() => _FileCardWidgetState();
+}
+
+class _FileCardWidgetState extends State<FileCardWidget> {
+  Future<void> downloadFile() async {
+    try {
+      if (kIsWeb) {
+        // Web platform download implementation
+        html.AnchorElement anchorElement =
+            html.AnchorElement(href: widget.downloadURL);
+        anchorElement.download = widget.downloadURL;
+        anchorElement.click();
+        // Will download through browser
+      } else {
+        // Mobile platform download implementation
+        final response = await http.get(Uri.parse(widget.downloadURL));
+
+        // Get the directory to save the file
+        final directory =
+            await getExternalStorageDirectory(); // For Android/iOS
+
+        // Create the file path
+        final file = File('${directory!.path}/$widget.fileName');
+
+        // Save the file
+        await file.writeAsBytes(response.bodyBytes);
+
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('File downloaded.')),
+        );
+      }
+    } catch (e) {
+      throw Exception('Failed to download file: $e');
+    }
+  }
+
+  Future<void> deleteItem({
+    required String userId,
+    required String fileName,
+    required String storagePath,
+  }) async {
+    try {
+      final firestore = FirebaseFirestore.instance;
+      final storage = FirebaseStorage.instance;
+
+      // Delete from Firestore
+      await firestore
+          .collection('uploads')
+          .doc(userId)
+          .collection('userCreated')
+          .doc(fileName)
+          .delete();
+
+      // Delete from Storage
+      await storage.refFromURL(storagePath).delete();
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('File deleted successfully!')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('File deletion failed!')),
+      );
+    }
+  }
+
+  Future<void> handleDelete() async {
+    try {
+      await deleteItem(
+        userId: widget.userId,
+        fileName: widget.fileName, // The Firestore document ID
+        storagePath: widget.downloadURL, // The Storage file path
+      );
+    } catch (e) {
+      //print(e);
+    }
+  }
+
+  PopupMenuItem<String> _buildMenuItem(
+    String value,
+    IconData icon,
+    String text,
+  ) {
+    return PopupMenuItem<String>(
+      value: value,
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: Colors.black87),
+          const SizedBox(width: 8),
+          Text(text),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -139,20 +244,35 @@ class FileCardWidget extends StatelessWidget {
         ),
         child: ListTile(
           leading: Icon(
-            fileTypeIcon,
+            widget.fileTypeIcon,
             color: Colors.teal,
             size: 40,
           ),
           title: Text(
-            fileName,
+            widget.fileName,
             style: const TextStyle(fontWeight: FontWeight.bold),
           ),
-          subtitle: Text(fileSize),
-          trailing: IconButton(
+          subtitle: Text(widget.fileSize),
+          trailing: PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),
-            onPressed: () {
-              // (open menu, file options) TODO
+            onSelected: (String value) {
+              switch (value) {
+                case 'download':
+                  downloadFile();
+                  break;
+                case 'delete':
+                  handleDelete();
+                  break;
+                case 'share':
+                  // Implement share functionality
+                  break;
+              }
             },
+            itemBuilder: (BuildContext context) => [
+              _buildMenuItem('download', Icons.download, 'Download'),
+              _buildMenuItem('delete', Icons.delete, 'Delete'),
+              _buildMenuItem('share', Icons.share, 'Share'),
+            ],
           ),
           onTap: () {
             // (preview or download) TODO
