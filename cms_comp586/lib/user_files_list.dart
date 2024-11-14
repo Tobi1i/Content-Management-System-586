@@ -1,13 +1,14 @@
 import 'dart:io';
+import 'package:cms_comp586/file_provider.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:http/http.dart' as http;
 // ignore: avoid_web_libraries_in_flutter
 import 'dart:html' as html; // Only used in web environment
 import 'package:path_provider/path_provider.dart';
+import 'package:provider/provider.dart';
 
 class FilesList extends StatefulWidget {
   const FilesList({super.key});
@@ -17,56 +18,33 @@ class FilesList extends StatefulWidget {
 }
 
 class FilesListState extends State<FilesList> {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  @override
+  void initState() {
+    super.initState();
 
-  Future<List<Map<String, dynamic>>> _getUserFiles() async {
-    User? user = _auth.currentUser;
-    if (user == null) {
-      throw Exception("User not logged in");
-    }
-
-    String userId = user.uid;
-
-    // Fetch files from Firestore
-    // pagination TODO
-    QuerySnapshot<Map<String, dynamic>> querySnapshot = await _firestore
-        .collection('uploads')
-        .doc(userId)
-        .collection('userCreated')
-        .get();
-
-    // Convert documents to a list of file metadata
-    List<Map<String, dynamic>> files =
-        querySnapshot.docs.map((doc) => doc.data()).toList();
-
-    return files;
+    // Fetch files when the widget is first created
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<FileProvider>(context, listen: false).fetchUserFiles();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<List<Map<String, dynamic>>>(
-      future: _getUserFiles(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
+    return Consumer<FileProvider>(
+      builder: (context, fileProvider, child) {
+        if (fileProvider.isLoading) {
           return const Center(child: CircularProgressIndicator());
         }
 
-        if (snapshot.hasError) {
-          return const Center(child: Text('Error loading files'));
-        }
-
-        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+        if (fileProvider.files.isEmpty) {
           return const Center(child: Text('No files found.'));
         }
 
-        List<Map<String, dynamic>> files = snapshot.data!;
-
         return Expanded(
           child: ListView.builder(
-            itemCount: files.length,
+            itemCount: fileProvider.files.length,
             itemBuilder: (context, index) {
-              Map<String, dynamic> fileData = files[index];
+              Map<String, dynamic> fileData = fileProvider.files[index];
               String fileName = fileData['fileName'] ?? 'Unknown File';
               String fileSize = _getFileSize(fileData['size'] ?? 0);
               String contentType = fileData['contentType'] ?? 'unknown';
@@ -80,7 +58,7 @@ class FilesListState extends State<FilesList> {
                 fileSize: fileSize,
                 fileTypeIcon: fileTypeIcon,
                 downloadURL: downloadURL,
-                userId: _auth.currentUser!.uid,
+                userId: fileProvider.auth.currentUser!.uid,
               );
             },
           ),
@@ -194,6 +172,8 @@ class _FileCardWidgetState extends State<FileCardWidget> {
       await storage.refFromURL(storagePath).delete();
 
       if (!mounted) return;
+      Provider.of<FileProvider>(context, listen: false).deleteFile(fileName);
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('File deleted successfully!')),
       );

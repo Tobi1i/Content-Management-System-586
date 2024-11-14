@@ -56,8 +56,6 @@ class HomeScreen extends StatelessWidget {
             ),
             const UploadFileScreen(),
             const FilesList(),
-            const SignOutButton(),
-            
             
           ],
         ),

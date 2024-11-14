@@ -1,3 +1,4 @@
+import 'package:cms_comp586/file_provider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
@@ -5,6 +6,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:io';
+
+import 'package:provider/provider.dart';
 
 class UploadFileScreen extends StatefulWidget {
   const UploadFileScreen({super.key});
@@ -15,7 +18,6 @@ class UploadFileScreen extends StatefulWidget {
 
 class UploadFileScreenState extends State<UploadFileScreen> {
   String? _downloadURL;
-  String? _fileName;
   String _visibility = 'private'; // Default visibility
 
   Future<void> _uploadFile() async {
@@ -27,7 +29,6 @@ class UploadFileScreenState extends State<UploadFileScreen> {
       // Get the file and its name
       PlatformFile file = result.files.first;
       String fileName = file.name;
-      _fileName = fileName;
 
       // Get current user ID
       User? user = FirebaseAuth.instance.currentUser;
@@ -60,12 +61,15 @@ class UploadFileScreenState extends State<UploadFileScreen> {
         'visibility': _visibility,
         'sharedWith': [], // Empty sharedWith array initially
       });
-
-      setState(() {
-        // Update the UI with the new file's metadata
-        _fileName = fileName;
-      });
+      Map<String, dynamic> newFile = {
+        'fileName': fileName,
+        'contentType': file.extension,
+        'downloadURL': _downloadURL,
+        'visibility': _visibility,
+        'sharedWith': [],
+      };
       if (!mounted) return;
+      Provider.of<FileProvider>(context, listen: false).addFile(newFile);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('File uploaded successfully!')),
       );
@@ -87,20 +91,6 @@ class UploadFileScreenState extends State<UploadFileScreen> {
             onPressed: _uploadFile,
             child: const Text('Pick & Upload File'),
           ),
-          const SizedBox(height: 20),
-          if (_fileName != null) ...[
-            Text('File: $_fileName'),
-            Text('Visibility: $_visibility'),
-            TextButton(
-              onPressed: () {
-                // Optionally toggle visibility
-                setState(() {
-                  _visibility = _visibility == 'private' ? 'public' : 'private';
-                });
-              },
-              child: const Text('Generate Share Link'),
-            ),
-          ],
         ],
       ),
     );
