@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -56,24 +57,39 @@ class _SearchScreenState extends State<SearchScreen> {
 class SearchResultsList extends StatelessWidget {
   final String query;
 
-  const SearchResultsList({super.key, required this.query});
+  SearchResultsList({required this.query});
 
   @override
   Widget build(BuildContext context) {
+    // Get the current user's ID
+    User? user = FirebaseAuth.instance.currentUser;
+    String? userId = user?.uid;
+
+    // Check if user is authenticated
+    if (userId == null) {
+      return Center(child: Text('Please log in to search for files.'));
+    }
+
     return StreamBuilder(
       stream: (query.isNotEmpty)
           ? FirebaseFirestore.instance
-              .collection('documents')
-              .where('tags', arrayContains: query)
+              .collection('uploads')
+              .doc(userId) // Navigate to the user’s document
+              .collection('userCreated') // Access the user’s uploads
+              .where('fileName', isEqualTo: query) // Search by 'fileName'
               .snapshots()
-          : FirebaseFirestore.instance.collection('documents').snapshots(),
+          : FirebaseFirestore.instance
+              .collection('uploads')
+              .doc(userId)
+              .collection('userCreated')
+              .snapshots(),
       builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return Center(child: CircularProgressIndicator());
         }
 
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return const Center(child: Text('No results found'));
+          return Center(child: Text('No results found'));
         }
 
         final results = snapshot.data!.docs;
@@ -83,8 +99,8 @@ class SearchResultsList extends StatelessWidget {
           itemBuilder: (context, index) {
             final doc = results[index];
             return ListTile(
-              title: Text(doc['title']),
-              subtitle: Text(doc['description'] ?? ''),
+              title: Text(doc['fileName']),
+              subtitle: Text(doc['contentType'] ?? ''),
               onTap: () {
                 // Handle tap to open document details
               },
