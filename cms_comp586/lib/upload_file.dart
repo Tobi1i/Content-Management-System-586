@@ -17,8 +17,13 @@ class UploadFileScreenState extends State<UploadFileScreen> {
   String? _downloadURL;
   String? _fileName;
   String _visibility = 'private'; // Default visibility
+  bool _isUploading = false; // To show upload progress
 
   Future<void> _uploadFile() async {
+    setState(() {
+      _isUploading = true; // Start uploading
+    });
+
     try {
       // Pick a file using file_picker package
       FilePickerResult? result = await FilePicker.platform.pickFiles();
@@ -47,6 +52,7 @@ class UploadFileScreenState extends State<UploadFileScreen> {
       }
       // Get the download URL
       _downloadURL = await storageRef.getDownloadURL();
+
       // Save file metadata to Firestore
       await FirebaseFirestore.instance
           .collection('uploads')
@@ -64,12 +70,16 @@ class UploadFileScreenState extends State<UploadFileScreen> {
       setState(() {
         // Update the UI with the new file's metadata
         _fileName = fileName;
+        _isUploading = false; // Stop uploading
       });
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('File uploaded successfully!')),
       );
     } catch (e) {
+      setState(() {
+        _isUploading = false; // Stop uploading in case of error
+      });
       print(e);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Failed to upload file')),
@@ -84,8 +94,10 @@ class UploadFileScreenState extends State<UploadFileScreen> {
       child: Column(
         children: [
           ElevatedButton(
-            onPressed: _uploadFile,
-            child: const Text('Pick & Upload File'),
+            onPressed: _isUploading ? null : _uploadFile, // Disable button while uploading
+            child: _isUploading
+                ? const CircularProgressIndicator()
+                : const Text('Pick & Upload File'),
           ),
           const SizedBox(height: 20),
           if (_fileName != null) ...[
@@ -98,8 +110,12 @@ class UploadFileScreenState extends State<UploadFileScreen> {
                   _visibility = _visibility == 'private' ? 'public' : 'private';
                 });
               },
-              child: const Text('Generate Share Link'),
+              child: const Text('Toggle Visibility'),
             ),
+            if (_visibility == 'public') ...[
+              const SizedBox(height: 10),
+              Text('Shareable Link: $_downloadURL'),
+            ]
           ],
         ],
       ),

@@ -72,6 +72,7 @@ class FilesListState extends State<FilesList> {
                 fileName: fileName,
                 fileSize: fileSize,
                 fileTypeIcon: fileTypeIcon,
+                downloadURL: downloadURL,
               );
             },
           ),
@@ -111,8 +112,9 @@ class FilesListState extends State<FilesList> {
 
   // Function to handle downloading the file
   void _downloadFile(String downloadURL) {
-    // Find package to work on web and mobile TODO
-    //print('Download URL: $downloadURL'); //Download link is direct
+    // You can open the download link or use packages like `url_launcher` to handle it
+    print('Download URL: $downloadURL');
+    // To handle the download on mobile/web, use the appropriate method (e.g., using url_launcher).
   }
 }
 
@@ -120,12 +122,14 @@ class FileCardWidget extends StatelessWidget {
   final String fileName;
   final String fileSize;
   final IconData fileTypeIcon;
+  final String downloadURL;
 
   const FileCardWidget({
     super.key,
     required this.fileName,
     required this.fileSize,
     required this.fileTypeIcon,
+    required this.downloadURL,
   });
 
   @override
@@ -155,7 +159,10 @@ class FileCardWidget extends StatelessWidget {
             },
           ),
           onTap: () {
-            // (preview or download) TODO
+            // Handle file preview or download
+            // Implement file preview or other actions
+            print('Opening file: $fileName');
+            // Example: _downloadFile(downloadURL); // Download the file if needed
           },
         ),
       ),
