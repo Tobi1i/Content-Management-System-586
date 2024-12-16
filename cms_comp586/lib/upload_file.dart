@@ -18,7 +18,7 @@ class UploadFileScreen extends StatefulWidget {
 
 class UploadFileScreenState extends State<UploadFileScreen> {
   String? _downloadURL;
-  String _visibility = 'private'; // Default visibility
+  final String _visibility = 'private'; // Default visibility
 
   Future<void> _uploadFile() async {
     try {

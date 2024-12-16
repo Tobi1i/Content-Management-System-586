@@ -27,6 +27,44 @@ class _SearchScreenState extends State<SearchScreen> {
       ),
       body: Column(
         children: [
+          // Comment Button Section
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: ElevatedButton.icon(
+              onPressed: () {
+                showModalBottomSheet(
+                  context: context,
+                  builder: (context) => Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Add a Comment',
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                        const SizedBox(height: 12),
+                        TextField(
+                          decoration: const InputDecoration(
+                            labelText: 'Type your comment here',
+                            border: OutlineInputBorder(),
+                          ),
+                          onSubmitted: (value) {
+                            // Logic to handle the typed comment (optional)
+                            Navigator.pop(context);
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.comment),
+              label: const Text('Add Comment'),
+            ),
+          ),
+
+          // Search Bar Section
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: TextField(
@@ -45,6 +83,8 @@ class _SearchScreenState extends State<SearchScreen> {
               ),
             ),
           ),
+
+          // Search Results Section
           Expanded(
             child: SearchResultsList(query: searchQuery),
           ),
@@ -61,11 +101,9 @@ class SearchResultsList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Get the current user's ID
     User? user = FirebaseAuth.instance.currentUser;
     String? userId = user?.uid;
 
-    // Check if user is authenticated
     if (userId == null) {
       return Center(child: Text('Please log in to search for files.'));
     }
@@ -74,9 +112,9 @@ class SearchResultsList extends StatelessWidget {
       stream: (query.isNotEmpty)
           ? FirebaseFirestore.instance
               .collection('uploads')
-              .doc(userId) // Navigate to the user’s document
-              .collection('userCreated') // Access the user’s uploads
-              .where('fileName', isEqualTo: query) // Search by 'fileName'
+              .doc(userId)
+              .collection('userCreated')
+              .where('fileName', isEqualTo: query)
               .snapshots()
           : FirebaseFirestore.instance
               .collection('uploads')
